@@ -4,7 +4,7 @@ pipeline {
         stage('Collect') {
             matrix {
                 agent {
-                    label "${BUILD_PLATFORM}-${BUILD_ARCH}-build"
+                    label "${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}"
                 }
                 axes {
                     axis {
@@ -15,6 +15,11 @@ pipeline {
                         name 'BUILD_ARCH'
                         values 'x86', 'amd64'
                     }
+                    axis {
+                        name 'SLAVE_TYPE'
+                        values 'test', 'build'
+                    }
+
                 }
                 excludes {
                     exclude {
@@ -45,16 +50,16 @@ pipeline {
                         steps {
                             script {
                                 if (isUnix()) {
-                                    sh script """
+                                    sh script: """
                                               export PATH=$PATH:/home/jenkins/.local/bin
-                                              ./show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                              ./show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt
                                               """
                                 }
                                 else {
-                                    bat "python show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                    bat "python show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt"
                                 }
 
-                                archiveArtifacts artifacts: "${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt", fingerprint: true
+                                archiveArtifacts artifacts: "${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt", fingerprint: true
                             }
                         }
                     }
