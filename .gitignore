@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+boost_test/
+msvc_test/
+versions.txt
+flycheck_*
