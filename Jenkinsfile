@@ -93,6 +93,8 @@ pipeline {
                     }
                 }
                 archiveArtifacts artifacts: "*.xml"
+
+                step([$class: 'ACIPluginPublisher', name: '*.xml', shownOnProjectPage: true])
             }
         }
     }
