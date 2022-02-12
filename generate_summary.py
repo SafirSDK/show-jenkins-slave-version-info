@@ -34,16 +34,16 @@ def log(*args, **kwargs):
 
 def main():
     info = dict()
-    for dir in os.listdir("."):
-        if not os.path.isdir(dir):
+    for file in os.listdir("."):
+        if not os.path.isfile(file):
             continue
-        match = re.match(r"label=(.*)",dir)
+        match = re.match(r"(.*)-versions.txt",file)
         if match is None:
-            log("Skipping",dir)
+            log("Skipping",file)
             continue
         name = match.group(1)
         info[name] = dict()
-        with open(os.path.join(dir,"versions.txt")) as f:
+        with open(file) as f:
             for line in f:
                 match = re.match(r"(.*): *(.*)",line)
                 info[name][match.group(1)] = match.group(2)

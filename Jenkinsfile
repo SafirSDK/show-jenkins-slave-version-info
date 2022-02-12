@@ -59,9 +59,36 @@ pipeline {
                                     bat "python show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt"
                                 }
 
-                                archiveArtifacts artifacts: "${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt", fingerprint: true
+                                archiveArtifacts artifacts: "${BUILD_PLATFORM}-${BUILD_ARCH}-${SLAVE_TYPE}-versions.txt"
                             }
                         }
+                    }
+                }
+            }
+        }
+        stage('Collate') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'git clean -fxd'
+                    }
+                    else {
+                        bat 'git clean -fxd'
+                    }
+                }
+
+                copyArtifacts projectName: '${JOB_NAME}',
+                              selector: specific('${BUILD_NUMBER}')
+
+                script {
+                    if (isUnix()) {
+                        sh script: """
+                                   export PATH=$PATH:/home/jenkins/.local/bin
+                                   ./generate_summary.py
+                                   """
+                    }
+                    else {
+                        bat "python generate_summary.py"
                     }
                 }
             }

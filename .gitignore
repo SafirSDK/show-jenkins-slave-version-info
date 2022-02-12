@@ -133,3 +133,6 @@ boost_test/
 msvc_test/
 versions.txt
 flycheck_*
+*-versions.txt
+build_summary.xml
+test_summary.xml
