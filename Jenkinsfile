@@ -91,6 +91,7 @@ pipeline {
                         bat "python generate_summary.py"
                     }
                 }
+                archiveArtifacts artifacts: "*.xml"
             }
         }
     }
