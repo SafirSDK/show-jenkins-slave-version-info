@@ -95,12 +95,19 @@ def ninja(f):
         f.write("Ninja: N/A\n")
 
 
-def java(f):
+def jre(f):
     try:
         output = subprocess.check_output(("java","-version"),stderr=subprocess.STDOUT).decode("utf-8")
-        f.write("Java: " + re.search(r"(java|openjdk) version \"([0-9\._]*).*\"",output).group(2).strip() + "\n")
+        f.write("JRE: " + re.search(r"(java|openjdk) version \"([0-9\._]*).*\"",output).group(2).strip() + "\n")
     except:
-        f.write("Java: N/A\n")
+        f.write("JRE: N/A\n")
+
+def jdk(f):
+    try:
+        output = subprocess.check_output(("javac","-version"),stderr=subprocess.STDOUT).decode("utf-8")
+        f.write("JDK: " + re.search(r"javac ([0-9\._]*).*",output).group(1).strip() + "\n")
+    except:
+        f.write("JDK: N/A\n")
 
 
 
@@ -191,7 +198,8 @@ def main():
         python(f)
         cmake(f)
         ninja(f)
-        java(f)
+        jre(f)
+        jdk(f)
         gcc(f)
         mono(f)
         doxygen(f)
