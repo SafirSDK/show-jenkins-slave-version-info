@@ -45,10 +45,10 @@ pipeline {
                         steps {
                             script {
                                 if (isUnix()) {
-                                    sh "show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                    sh "./show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
                                 }
                                 else {
-                                    bat "show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                    bat "python show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
                                 }
 
                                 archiveArtifacts artifacts: "${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt", fingerprint: true
