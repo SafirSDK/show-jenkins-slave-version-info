@@ -67,6 +67,7 @@ pipeline {
             }
         }
         stage('Collate') {
+            agent any
             steps {
                 script {
                     if (isUnix()) {
@@ -78,7 +79,7 @@ pipeline {
                 }
 
                 copyArtifacts projectName: '${JOB_NAME}',
-                              selector: specific('${BUILD_NUMBER}')
+                selector: specific('${BUILD_NUMBER}')
 
                 script {
                     if (isUnix()) {
