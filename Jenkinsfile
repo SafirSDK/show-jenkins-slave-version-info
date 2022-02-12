@@ -45,7 +45,10 @@ pipeline {
                         steps {
                             script {
                                 if (isUnix()) {
-                                    sh "./show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                    sh script """
+                                              export PATH=$PATH:/home/jenkins/.local/bin
+                                              ./show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
+                                              """
                                 }
                                 else {
                                     bat "python show_versions.py --output ${BUILD_PLATFORM}-${BUILD_ARCH}-versions.txt"
