@@ -67,7 +67,7 @@ pipeline {
             }
         }
         stage('Collate') {
-            agent any
+            agent { label 'debian-bullseye-amd64-build || debian-bullseye-amd64-test' }
             steps {
                 script {
                     if (isUnix()) {
