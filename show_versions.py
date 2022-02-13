@@ -141,36 +141,33 @@ def msvc(f):
         remove("msvc_test")
         mkdir("msvc_test")
         os.chdir("msvc_test")
-        cm = open("CMakeLists.txt","w")
-        cm.write("project(foo CXX)\n")
-        cm.close()
+        with open("CMakeLists.txt","w") as cm:
+            cm.write("project(foo CXX)\n")
         output = subprocess.check_output(("cmake",".")).decode("utf-8")
         f.write("MSVC: " + re.search(r"The CXX compiler identification is MSVC ([\.0-9]*)",output).group(1).strip() + "\n")
     except:
         f.write("MSVC: N/A\n")
     os.chdir(olddir)
 
-def boost(f):
+def get_version_using_cmake(package, regex):
     olddir = os.getcwd()
     try:
-        remove("boost_test")
-        mkdir("boost_test")
-        os.chdir("boost_test")
-        cm = open("CMakeLists.txt","w")
-        cm.write("project(foo CXX)\ncmake_minimum_required(VERSION 3.10)\nfind_package(Boost REQUIRED)\n")
-        cm.close()
+        remove(package + "_test")
+        mkdir(package + "_test")
+        os.chdir(package + "_test")
+        with open("CMakeLists.txt","w") as cm:
+            cm.write("project(foo CXX)\ncmake_minimum_required(VERSION 3.10)\nfind_package("+package+" REQUIRED)\n")
         output = subprocess.check_output(("cmake",".")).decode("utf-8")
-        f.write("Boost: " + re.search(r"Found Boost: .* \(found version \"([\.0-9]*)\"\)",output).group(1).strip() + "\n")
+        return re.search(regex,output).group(1).strip()
     except:
-        f.write("Boost: N/A\n")
+        return "N/A"
     os.chdir(olddir)
 
+def boost(f):
+    f.write("Boost: " + get_version_using_cmake("Boost",r"Found Boost: .* \(found version \"([\.0-9]*)\"\)") + "\n")
+
 def doxygen(f):
-    try:
-        output = subprocess.check_output(("doxygen","--version"),stderr=subprocess.STDOUT).decode("utf-8")
-        f.write("Doxygen: " + output.strip() + "\n")
-    except:
-        f.write("Doxygen: N/A\n")
+    f.write("Doxygen: " + get_version_using_cmake("Doxygen",r"Found Doxygen: .* \(found version \"([\.0-9]*)(?: \(.*\))?\"\)") + "\n")
 
 def graphviz(f):
     try:
@@ -190,7 +187,7 @@ def nsis(f):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output",
-                        default="version.txt",
+                        default="versions.txt",
                         help="Name of output file")
     arguments = parser.parse_args()
     with open(arguments.output,"w") as f:

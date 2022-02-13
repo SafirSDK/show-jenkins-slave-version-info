@@ -136,3 +136,4 @@ flycheck_*
 *-versions.txt
 build_summary.xml
 test_summary.xml
+Doxygen_test/
