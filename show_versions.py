@@ -158,10 +158,12 @@ def get_version_using_cmake(package, regex):
         with open("CMakeLists.txt","w") as cm:
             cm.write("project(foo CXX)\ncmake_minimum_required(VERSION 3.10)\nfind_package("+package+" REQUIRED)\n")
         output = subprocess.check_output(("cmake",".")).decode("utf-8")
+        os.chdir(olddir)
         return re.search(regex,output).group(1).strip()
     except:
+        os.chdir(olddir)
         return "N/A"
-    os.chdir(olddir)
+
 
 def boost(f):
     f.write("Boost: " + get_version_using_cmake("Boost",r"Found Boost: .* \(found version \"([\.0-9]*)\"\)") + "\n")
