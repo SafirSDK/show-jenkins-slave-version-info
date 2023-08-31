@@ -9,7 +9,7 @@ pipeline {
                 axes {
                     axis {
                         name 'BUILD_PLATFORM'
-                        values 'ubuntu-focal', 'debian-bullseye', 'vs2015', 'vs2019'
+                        values 'ubuntu-focal', 'ubuntu-jammy', 'debian-bullseye', 'vs2015', 'vs2017', 'vs2019', 'vs2022'
                     }
                     axis {
                         name 'BUILD_ARCH'
@@ -25,7 +25,7 @@ pipeline {
                     exclude {
                         axis { //ubuntu does no longer support 32 bit builds
                             name 'BUILD_PLATFORM'
-                            values 'ubuntu-focal'
+                            values 'ubuntu-focal', 'ubuntu-jammy'
                         }
                         axis {
                             name 'BUILD_ARCH'
