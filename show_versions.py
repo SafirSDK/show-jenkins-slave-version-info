@@ -141,8 +141,8 @@ def msvc(f):
         remove("msvc_test")
         mkdir("msvc_test")
         os.chdir("msvc_test")
-        with open("CMakeLists.txt","w") as cm:
-            cm.write("project(foo CXX)\n")
+        with open("CMakeLists.txt","w", encoding="utf-8") as cmake_file:
+            cmake_file.write("cmake_minimum_required(VERSION 3.10)\nproject(foo CXX)\n")
         output = subprocess.check_output(("cmake",".")).decode("utf-8")
         f.write("MSVC: " + re.search(r"The CXX compiler identification is MSVC ([\.0-9]*)",output).group(1).strip() + "\n")
     except:
@@ -155,8 +155,8 @@ def get_version_using_cmake(package, regex):
         remove(package + "_test")
         mkdir(package + "_test")
         os.chdir(package + "_test")
-        with open("CMakeLists.txt","w") as cm:
-            cm.write("project(foo CXX)\ncmake_minimum_required(VERSION 3.10)\nfind_package("+package+" REQUIRED)\n")
+        with open("CMakeLists.txt","w",encoding="utf-8") as cmake_file:
+            cmake_file.write("cmake_minimum_required(VERSION 3.10)\nproject(foo CXX)\nfind_package("+package+" REQUIRED)\n")
         output = subprocess.check_output(("cmake",".")).decode("utf-8")
         os.chdir(olddir)
         return re.search(regex,output).group(1).strip()
