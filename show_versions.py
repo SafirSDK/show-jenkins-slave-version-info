@@ -165,68 +165,84 @@ def find_vcvarsall():
     return vcvarsall,version
 
 
-def run_vcvarsall(self, vcvarsall, version):
+def run_vcvarsall(vcvarsall, version, studio_version):
     if version == "old":
         if self.arguments.use_studio not in  ("any", "vs2015"):
             die("Could only find vs2015")
         cmd = '"{}" {} & set'.format(vcvarsall, self.arguments.arch)
     else:
-        if self.arguments.use_studio == "vs2015":
+        if studio_version == "vs2015":
             vcver = "14.0"
-        elif self.arguments.use_studio == "vs2017":
+        elif studio_version == "vs2017":
             vcver = "14.1"
-        elif self.arguments.use_studio == "vs2019":
+        elif studio_version == "vs2019":
             vcver = "14.2"
-        elif self.arguments.use_studio == "vs2022":
+        elif studio_version == "vs2022":
             vcver = "14.3"
-        cmd = '"{}" {} -vcvars_ver={} & set'.format(vcvarsall, self.arguments.arch, vcver)
+        cmd = '"{}" x64 -vcvars_ver={} & set'.format(vcvarsall, vcver)
 
     log("Running '" + cmd + "' to extract environment")
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     output = proc.communicate()[0]
     if proc.returncode != 0:
-        die("Failed to fetch environment variables out of vcvarsall.bat: " + output)
+        return None
+    if re.search("Toolset directory for version .* was not found.",output):
+        return None
     return output
 
-def setup_build_environment():
-    """
-    Find vcvarsall.bat and load the relevant environment variables from it.  This function
-    is inspired (but not copied, for licensing reasons) by the one in python's setuptools.
-    """
 
-    vcvarsall, version = find_vcvarsall()
+class VisualStudioEnvironment:
+    def __init__(self, studio_version):
+       self.old_environment = dict()
+       self.studio_version = studio_version
 
-    #use uppercase only in this variable!
-    required_variables = set(["LIB", "LIBPATH", "PATH", "INCLUDE", "VSINSTALLDIR"])
-    optional_variables = set([
-        "PLATFORM",
-    ])
-    wanted_variables = required_variables | optional_variables  #union
+    def __enter__(self):
+        vcvarsall = find_vcvarsall()
 
-    log("Loading Visual Studio Environment", "header")
-    output = run_vcvarsall(vcvarsall, version)
+        #use uppercase only in this variable!
+        required_variables = set(["LIB", "LIBPATH", "PATH", "INCLUDE", "VSINSTALLDIR"])
+        optional_variables = set([
+            "PLATFORM",
+        ])
+        wanted_variables = required_variables | optional_variables  #union
 
-    found_variables = set()
+        log("Loading Visual Studio Environment", "header")
+        output = run_vcvarsall(vcvarsall[0], vcvarsall[1], self.studio_version)
 
-    for line in output.split("\n"):
-        if '=' not in line:
-            continue
-        line = line.strip()
-        name, value = line.split('=', 1)
-        name = name.upper()
-        if name in wanted_variables:
-            if value.endswith(os.pathsep):
-                value = value[:-1]
-            if os.environ.get(name) is None:
-                log("Will set '" + name + "' to '" + value + "'", "detail")
+        if output is None:
+            return
+
+        found_variables = set()
+
+        for line in output.split("\n"):
+            if '=' not in line:
+                continue
+            line = line.strip()
+            name, value = line.split('=', 1)
+            name = name.upper()
+            if name in wanted_variables:
+                if value.endswith(os.pathsep):
+                    value = value[:-1]
+                if os.environ.get(name) is None:
+                    #log("Will set '" + name + "' to '" + value + "'", "detail")
+                    self.old_environment[name] = None
+
+                else:
+                    #log("Will change '" + name + "' from '" + os.environ.get(name) + "' to '" + value + "'",
+                    #           "detail")
+                    self.old_environment[name] = os.environ.get(name)
+                os.environ[name] = value
+                found_variables.add(name)
+
+        if len(required_variables - found_variables) != 0:
+            die("Failed to find all expected variables in vcvarsall.bat")
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        for name, val in self.old_environment.items():
+            if val is None:
+                del os.environ[name]
             else:
-                log("Will change '" + name + "' from '" + os.environ.get(name) + "' to '" + value + "'",
-                           "detail")
-            os.environ[name] = value
-            found_variables.add(name)
-
-    if len(required_variables - found_variables) != 0:
-        die("Failed to find all expected variables in vcvarsall.bat")
+                os.environ[name] = val
 
 
 def python(f):
@@ -294,23 +310,23 @@ def qt(f):
     except:
         f.write("Qt: N/A\n")
 
-def vs2015(f):
+def msvc(f, version):
     if platform.system() != 'Windows':
-        f.write("vs2015: N/A\n")
-        
-def msvc(f):
-    olddir = os.getcwd()
-    try:
-        remove("msvc_test")
-        mkdir("msvc_test")
-        os.chdir("msvc_test")
-        with open("CMakeLists.txt","w", encoding="utf-8") as cmake_file:
-            cmake_file.write("cmake_minimum_required(VERSION 3.10)\nproject(foo CXX)\n")
-        output = subprocess.check_output(("cmake",".")).decode("utf-8")
-        f.write("MSVC: " + re.search(r"The CXX compiler identification is MSVC ([\.0-9]*)",output).group(1).strip() + "\n")
-    except:
-        f.write("MSVC: N/A\n")
-    os.chdir(olddir)
+        f.write(f"MSVC {version}: N/A\n")
+        return
+    with VisualStudioEnvironment(version):
+        olddir = os.getcwd()
+        try:
+            remove("msvc_test")
+            mkdir("msvc_test")
+            os.chdir("msvc_test")
+            with open("CMakeLists.txt","w", encoding="utf-8") as cmake_file:
+                cmake_file.write("cmake_minimum_required(VERSION 3.10)\nproject(foo CXX)\n")
+            output = subprocess.check_output(("cmake",".", "-G", "Ninja")).decode("utf-8")
+            f.write(f"MSVC {version}: " + re.search(r"The CXX compiler identification is MSVC ([\.0-9]*)",output).group(1).strip() + "\n")
+        except:
+            f.write(f"MSVC {version}: N/A\n")
+        os.chdir(olddir)
 
 def get_version_using_cmake(package, regex):
     olddir = os.getcwd()
@@ -368,10 +384,10 @@ def main():
         graphviz(f)
         qt(f)
         boost(f)
-        vs2015(f)
-        #vs2017(f)
-        #vs2019(f)
-        #vs2022(f)
+        msvc(f, "vs2015")
+        msvc(f, "vs2017")
+        msvc(f, "vs2019")
+        msvc(f, "vs2022")
         nsis(f)
         #msvcrt
         #msvcrtd
